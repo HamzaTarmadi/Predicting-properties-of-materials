@@ -7,47 +7,55 @@ from sklearn.metrics import mean_squared_error
 import numpy as np
 
 
+def main():
+    print("#################PREPARING DATA...#####################")
+    # Importer les donnï¿½es qu'on va utiliser pour l'apprentissage
+    # On prend tous les matï¿½riaux disponibles sur MaterialsProject contenant deux atomes
+    mpdr = MPDataRetrieval(api_key='3g9wMps4VR5Hy6Pm') # api_key correspond ï¿½ la clï¿½ propre au compte crï¿½e sur MaterialProjects
+    df = mpdr.get_dataframe(criteria={"nelements": 2}, properties=['pretty_formula', 'band_gap', 'structure'])
 
-print("#################PREPARING DATA...#####################")
-# Importer les données qu'on va utiliser pour l'apprentissage
-# On prend tous les matériaux disponibles sur MaterialsProject contenant deux atomes
-mpdr = MPDataRetrieval(api_key='3g9wMps4VR5Hy6Pm') # api_key correspond à la clé propre au compte crée sur MaterialProjects
-df = mpdr.get_dataframe(criteria={"nelements": 2}, properties=['pretty_formula', 'band_gap', 'structure'])
+    # On ajoute une colonne montrant les ï¿½lï¿½ments contenus dans le mï¿½tal
+    df = StrToComposition().featurize_dataframe(df, "pretty_formula")
 
-# On ajoute une colonne montrant les éléments contenus dans le métal
-df = StrToComposition().featurize_dataframe(df, "pretty_formula")
-
-# On crée de nouvelles colonnes qui contiennent les caractéristiques de chaque atome
-atob = AtomicOrbitals() 
-vaob = ValenceOrbital()
-df = atob.featurize_dataframe(df, "composition")
-df = vaob.featurize_dataframe(df, "composition")
-
-# On prépare les données pour l'apprentissage
-X, y = df.drop(['pretty_formula','band_gap', 'structure', 'composition'], axis=1), df['band_gap']
-print("#################DONE SUCCESSFULLY#####################")
+    # On crï¿½e de nouvelles colonnes qui contiennent les caractï¿½ristiques de chaque atome
+    atob = AtomicOrbitals()
+    vaob = ValenceOrbital()
+    #df = atob.featurize_dataframe(df, "composition")
+    df = atob.featurize_dataframe(df.iloc[0:500, :], "composition")
+    #for i in range(19000//500):
+        #datf = atob.featurize_dataframe(df.iloc[i*500:(i+1)*500, :], "composition")
 
 
-print("#################PREPARING THE LINEAR REGERSSION...#####################")
+    df = vaob.featurize_dataframe(df, "composition")
 
-# On procède à la création du modèle et à l'apprentissage
-model = LinearRegression(X, y)
-
-print("#################DONE SUCCESSFULLY#####################")
-
-print(f'training R2 ={str(round(model.score(X, y), 3))}')
-print('training RMSE = %.3f' % np.sqrt(mean_squared_error(y_true=y, y_pred=model.predict(X))))
+    # On prï¿½pare les donnï¿½es pour l'apprentissage
+    X, y = df.drop(['pretty_formula','band_gap', 'structure', 'composition'], axis=1), df['band_gap']
+    print("#################DONE SUCCESSFULLY#####################")
 
 
-print("#################TESTING THE MODEL...#####################")
+    print("#################PREPARING THE LINEAR REGERSSION...#####################")
 
-df_test = pdr.get_dataframe(criteria={"nelements": 3}, properties=['pretty_formula', 'band_gap', 'structure'])
-df_test = df_test.iloc[:500,:]
-df_test = atob.featurize_dataframe(df_test, "composition")
-df_test = vaob.featurize_dataframe(df_tet, "composition")
-X_test, y_test = df_test.drop(['pretty_formula','band_gap', 'structure', 'composition'], axis=1), df_test['band_gap']
+    # On procï¿½de ï¿½ la crï¿½ation du modï¿½le et ï¿½ l'apprentissage
+    model = LinearRegression(X, y)
 
-y_test_pred = model.predict(X_test)
-print('testing RMSE = %.3f' % np.sqrt(mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
+    print("#################DONE SUCCESSFULLY#####################")
+
+    print(f'training R2 ={str(round(model.score(X, y), 3))}')
+    print('training RMSE = %.3f' % np.sqrt(mean_squared_error(y_true=y, y_pred=model.predict(X))))
+
+
+    print("#################TESTING THE MODEL...#####################")
+
+    df_test = pdr.get_dataframe(criteria={"nelements": 3}, properties=['pretty_formula', 'band_gap', 'structure'])
+    df_test = df_test.iloc[:500,:]
+    df_test = atob.featurize_dataframe(df_test, "composition")
+    df_test = vaob.featurize_dataframe(df_tet, "composition")
+    X_test, y_test = df_test.drop(['pretty_formula','band_gap', 'structure', 'composition'], axis=1), df_test['band_gap']
+
+    y_test_pred = model.predict(X_test)
+    print('testing RMSE = %.3f' % np.sqrt(mean_squared_error(y_true=y_test, y_pred=y_test_pred)))
+
+if __name__ == '__main__':
+    main()
 
 
